@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>多智能体会议系统 - CAMEL-AI 智能协作平台</title>
+    <meta name="description" content="基于 CAMEL-AI 框架的多智能体会议系统，支持 CEO 和多个专业智能体的协作对话">
+    <meta name="keywords" content="多智能体,会议系统,CAMEL-AI,人工智能,协作平台">
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="app">
+        <!-- 配置页面 -->
+        <div v-if="!meetingStarted" class="config-page">
+            <div class="config-container">
+                <h1>🎯 多智能体会议系统</h1>
+                <p class="subtitle">基于 CAMEL-AI 框架的智能协作平台</p>
+                
+                <div class="config-section">
+                    <h2>会议配置</h2>
+                    
+                    <div class="input-group">
+                        <label for="meeting-topic">会议主题：</label>
+                        <input 
+                            id="meeting-topic"
+                            v-model="config.topic" 
+                            placeholder="请输入会议主题，例如：产品创新策略讨论"
+                            class="input-field"
+                            type="text"
+                            required
+                            aria-describedby="topic-help"
+                            autocomplete="off"
+                        />
+                        <div id="topic-help" class="sr-only">请输入一个简洁明了的会议主题</div>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="meeting-background">会议背景：</label>
+                        <textarea 
+                            id="meeting-background"
+                            v-model="config.background" 
+                            placeholder="请输入会议背景信息，例如：当前市场竞争激烈，需要制定新的产品策略..."
+                            class="textarea-field"
+                            rows="4"
+                            required
+                            aria-describedby="background-help"
+                        ></textarea>
+                        <div id="background-help" class="sr-only">请详细描述会议背景，帮助智能体更好地理解讨论环境</div>
+                    </div>
+                </div>
+                
+                <div class="config-section">
+                    <h2>智能体配置</h2>
+                    
+                    <!-- CEO 智能体 -->
+                    <div class="agent-config" role="group" aria-labelledby="ceo-title">
+                        <h3 id="ceo-title">👔 CEO (决策者)</h3>
+                        <div class="input-group">
+                            <label for="ceo-description">描述：</label>
+                            <textarea 
+                                id="ceo-description"
+                                v-model="config.agents[0].description" 
+                                placeholder="例如：资深企业管理者，善于战略决策和团队协调"
+                                class="textarea-field"
+                                rows="2"
+                                required
+                                aria-describedby="ceo-help"
+                            ></textarea>
+                            <div id="ceo-help" class="sr-only">请描述CEO的专业背景和决策风格</div>
+                        </div>
+                    </div>
+                    
+                    <!-- 其他三个智能体 -->
+                    <div v-for="(agent, index) in config.agents.slice(1)" :key="index" class="agent-config" role="group" :aria-labelledby="`agent-${index + 2}-title`">
+                        <h3 :id="`agent-${index + 2}-title`">🤖 智能体 {{ index + 2 }}</h3>
+                        <div class="input-group">
+                            <label :for="`agent-${index + 2}-role`">角色名称：</label>
+                            <input 
+                                :id="`agent-${index + 2}-role`"
+                                v-model="agent.role" 
+                                placeholder="例如：产品经理、技术专家、市场分析师"
+                                class="input-field"
+                                type="text"
+                                required
+                                :aria-describedby="`agent-${index + 2}-role-help`"
+                                autocomplete="off"
+                            />
+                            <div :id="`agent-${index + 2}-role-help`" class="sr-only">请输入该智能体的专业角色名称</div>
+                        </div>
+                        <div class="input-group">
+                            <label :for="`agent-${index + 2}-description`">角色描述：</label>
+                            <textarea 
+                                :id="`agent-${index + 2}-description`"
+                                v-model="agent.description" 
+                                placeholder="描述该智能体的专业领域和特点"
+                                class="textarea-field"
+                                rows="2"
+                                required
+                                :aria-describedby="`agent-${index + 2}-desc-help`"
+                            ></textarea>
+                            <div :id="`agent-${index + 2}-desc-help`" class="sr-only">请详细描述该智能体的专业背景和特点</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <button 
+                    @click="startMeeting" 
+                    class="start-button" 
+                    :disabled="!canStartMeeting"
+                    :aria-describedby="!canStartMeeting ? 'warning-text' : null"
+                    aria-label="启动多智能体会议"
+                >
+                    🚀 启动会议
+                </button>
+                
+                <p v-if="!canStartMeeting" id="warning-text" class="warning-text" role="alert" aria-live="polite">
+                    ⚠️ 请填写所有必填项
+                </p>
+            </div>
+        </div>
+        
+        <!-- 会议页面 -->
+        <div v-else class="meeting-page">
+            <!-- 左侧控制面板 -->
+            <div class="left-panel">
+                <!-- 会议信息 -->
+                <div class="meeting-info-card">
+                    <h3>📋 会议信息</h3>
+                    <div class="info-item">
+                        <span class="info-label">主题：</span>
+                        <span class="info-value">{{ config.topic }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">背景：</span>
+                        <span class="info-value">{{ config.background }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">轮次：</span>
+                        <span class="info-value">{{ currentRound }}/{{ maxRounds }}</span>
+                        <div class="round-progress-bar" v-if="meetingStarted">
+                            <div class="progress-fill" :style="{ width: roundProgress + '%' }" 
+                                 :class="{ 'near-max': isNearMaxRounds }"></div>
+                        </div>
+                    </div>
+                    <div class="info-item warning" v-if="isNearMaxRounds && meetingStarted">
+                        <span class="warning-text">⚠️ 接近最大轮次限制</span>
+                    </div>
+                </div>
+
+                <!-- 系统状态 -->
+                <div class="status-card">
+                    <h3>🔧 系统状态</h3>
+                    <div class="status-item">
+                        <span class="status-label">后端连接</span>
+                        <span class="status-indicator" :class="{ 'online': systemStatus.backendConnected, 'offline': !systemStatus.backendConnected }">
+                            {{ systemStatus.backendConnected ? '在线' : '离线' }}
+                        </span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">当前发言者</span>
+                        <span class="status-value">{{ getCurrentSpeakerName() }}</span>
+                    </div>
+                </div>
+
+                <!-- 智能体状态 -->
+                <div class="agents-status-card">
+                    <h3>🤖 智能体状态</h3>
+                    <div 
+                        v-for="(agent, index) in config.agents" 
+                        :key="index"
+                        class="agent-status-item"
+                        :class="{ 'active': currentSpeakerId === index, 'ceo': index === 0 }"
+                    >
+                        <div class="agent-avatar-small">
+                            {{ index === 0 ? '👔' : '🤖' }}
+                        </div>
+                        <div class="agent-details">
+                            <div class="agent-name-small">{{ agent.role || 'CEO' }}</div>
+                            <div class="agent-status-small">
+                                {{ currentSpeakerId === index ? '发言中' : '待命' }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 操作按钮 -->
+                <div class="actions-card">
+                    <h3>⚡ 操作控制</h3>
+                    <button @click="restartMeeting" class="control-button restart-btn" aria-label="重新开始会议">
+                        🔄 重新开始
+                    </button>
+                    <button @click="endMeeting" class="control-button end-btn" :class="{ 'disabled': showSummary }" :disabled="showSummary" aria-label="结束当前会议">
+                        {{ showSummary ? '⏹️ 已停止' : '⏹️ 结束会议' }}
+                    </button>
+                    <button @click="downloadTranscript" class="control-button download-btn" aria-label="下载会议记录">
+                        📥 下载记录
+                    </button>
+                </div>
+
+            </div>
+
+            <!-- 右侧消息区域 -->
+            <div class="right-panel">
+                <!-- 对话消息区 -->
+                <div class="messages-container" ref="messagesContainer" role="log" aria-label="会议对话记录" aria-live="polite" aria-atomic="false">
+                    <div 
+                        v-for="(msg, index) in messages" 
+                        :key="index"
+                        class="message-item"
+                        :class="{ 'ceo-message': msg.agent_id === 0 }"
+                        role="article"
+                        :aria-label="`${msg.role}的发言`"
+                    >
+                        <div class="message-header">
+                            <span class="message-role" :aria-label="`发言人: ${msg.role}`">{{ msg.role }}</span>
+                            <span class="message-time" :aria-label="`发言时间: ${formatTime(msg.timestamp)}`">{{ formatTime(msg.timestamp) }}</span>
+                        </div>
+                        <div class="message-content" :aria-label="`${msg.role}的发言内容`">{{ msg.content }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 会议总结弹窗 -->
+        <div v-if="showSummary" class="modal-overlay" @click="closeSummary" role="dialog" aria-modal="true" aria-labelledby="summary-title" aria-describedby="summary-content">
+            <div class="modal-content" @click.stop>
+                <h2 id="summary-title">📋 会议总结</h2>
+                <div id="summary-content" class="summary-content" role="region" aria-label="会议总结内容">{{ summary }}</div>
+                <div class="modal-actions" role="toolbar" aria-label="总结操作">
+                    <button @click="downloadTranscript" class="action-button" aria-label="下载完整会议记录">下载完整记录</button>
+                    <button @click="closeSummary" class="action-button" aria-label="关闭会议总结">关闭</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 加载提示 -->
+        <div v-if="loading" class="loading-overlay" role="status" aria-live="polite" aria-label="系统加载中">
+            <div class="loading-spinner" aria-hidden="true"></div>
+            <p>{{ loadingText }}</p>
+        </div>
+    </div>
+    
+    <script src="app.js"></script>
+</body>
+</html>

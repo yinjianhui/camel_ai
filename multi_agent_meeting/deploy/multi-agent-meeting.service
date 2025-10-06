@@ -1,0 +1,38 @@
+[Unit]
+Description=Multi Agent Meeting System
+Documentation=https://github.com/your-repo/multi-agent-meeting
+After=network.target network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/multi_agent_meeting
+Environment=PATH=/opt/multi_agent_meeting/venv/bin
+Environment=PYTHONPATH=/opt/multi_agent_meeting
+EnvironmentFile=/opt/multi_agent_meeting/.env
+ExecStart=/opt/multi_agent_meeting/venv/bin/python backend/app_new.py
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=multi-agent-meeting
+
+# 安全设置
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/multi_agent_meeting
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+
+# 资源限制
+LimitNOFILE=65536
+LimitNPROC=4096
+
+[Install]
+WantedBy=multi-user.target
