@@ -106,7 +106,7 @@ clone_project() {
         git pull origin master
     else
         log_info "克隆项目代码..."
-        git clone https://github.com/yinjianhui/camel-ai-learning.git .
+        git clone https://github.com/yinjianhui/camel_ai.git .
     fi
     
     log_success "项目代码准备完成"
@@ -252,6 +252,17 @@ set_permissions() {
     sudo chmod -R 755 /opt/camel_ai
     
     log_success "权限设置完成"
+}
+
+# 创建项目目录
+create_project_dir() {
+    log_info "创建项目目录..."
+    
+    sudo mkdir -p /opt/camel_ai
+    sudo chown $USER:$USER /opt/camel_ai
+    cd /opt/camel_ai
+    
+    log_success "项目目录创建完成"
 }
 
 # 启动服务

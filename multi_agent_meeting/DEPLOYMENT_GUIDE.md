@@ -9,16 +9,17 @@
 - **网络**: 公网IP，开放80、443、5000端口
 - **Python**: 3.8+ （推荐3.11+）
 
-### 2. 域名准备（可选）
-- 准备一个域名指向您的服务器IP
-- 如需HTTPS，准备SSL证书
+### 2. 服务器信息
+- **服务器IP**: 8.134.128.123
+- **操作系统**: CentOS
+- **登录账号**: root
+- **访问方式**: 通过IP地址直接访问
+- **无需配置域名**
 
-### 3. 微信登录配置（可选）
-- 如需启用微信登录功能，需要：
-  - 注册微信开放平台账号
-  - 创建网站应用
-  - 获取AppID和AppSecret
-  - 配置授权回调域名
+### 3. 系统访问
+- 系统无需登录即可直接使用
+- 无需配置任何第三方登录服务
+- 直接通过IP地址访问系统
 
 ## 🚀 Git部署步骤（推荐）
 
@@ -27,7 +28,7 @@
 # 1. 克隆项目到服务器
 sudo mkdir -p /opt
 cd /opt
-sudo git clone https://github.com/yinjianhui/camel-ai-learning.git camel_ai
+sudo git clone https://github.com/yinjianhui/camel_ai.git camel_ai
 sudo chown -R $USER:$USER camel_ai
 
 # 2. 进入项目目录
@@ -46,7 +47,7 @@ chmod +x multi_agent_meeting/deploy/quick-deploy.sh
 sudo mkdir -p /opt/camel_ai
 sudo chown $USER:$USER /opt/camel_ai
 cd /opt/camel_ai
-git clone https://github.com/yinjianhui/camel-ai-learning.git .
+git clone https://github.com/yinjianhui/camel_ai.git .
 
 # 2. 创建Python虚拟环境
 python3 -m venv venv
@@ -102,7 +103,7 @@ sudo chown $USER:$USER /opt/camel_ai
 cd /opt/camel_ai
 
 # 克隆项目代码
-git clone https://github.com/yinjianhui/camel-ai-learning.git .
+git clone https://github.com/yinjianhui/camel_ai.git .
 
 # 检查项目结构
 ls -la
@@ -167,35 +168,19 @@ FLASK_HOST=0.0.0.0
 FLASK_PORT=5000
 FLASK_DEBUG=False
 
-# 微信登录配置（可选）
-WECHAT_APP_ID=your_wechat_app_id
-WECHAT_APP_SECRET=your_wechat_app_secret
-WECHAT_REDIRECT_URI=https://your-domain.com/api/auth/wechat/callback
-WECHAT_ENABLE_LOGIN=True
-
 # 其他配置保持默认即可
 ```
 
-### 第七步：配置API密钥
+### 第七步：验证API密钥配置
 ```bash
-# 编辑配置文件，替换为您的真实API密钥
-nano multi_agent_meeting/backend/config.py
+# 检查API密钥配置（已预配置）
+cat multi_agent_meeting/backend/config.py | grep -A 6 "api_keys"
 ```
 
-找到`api_keys`部分，替换为您的真实API密钥：
-```python
-self.api_keys: List[str] = [
-    "sk-your-ceo-api-key-here",
-    "sk-your-agent1-api-key-here", 
-    "sk-your-agent2-api-key-here",
-    "sk-your-agent3-api-key-here"
-]
-```
-
-**重要提醒：**
-- 请将示例API密钥替换为您的真实密钥
-- 确保API密钥有足够的额度
-- 建议为不同智能体使用不同的API密钥
+**说明：**
+- 项目已预配置了4个有效的API密钥，无需额外配置
+- 系统会为4个智能体（CEO、Agent1、Agent2、Agent3）分配不同的API密钥
+- API密钥已包含在项目中，确保系统可以正常运行
 
 ### 第八步：创建systemd服务
 ```bash
@@ -244,7 +229,7 @@ sudo nano /etc/nginx/sites-available/multi-agent-meeting
 ```nginx
 server {
     listen 80;
-    server_name your-domain.com;  # 替换为您的域名或IP
+    server_name 8.134.128.123;  # 服务器IP地址
 
     # 前端静态文件
     location / {
@@ -459,38 +444,6 @@ sudo nano /etc/logrotate.d/multi-agent-meeting
 }
 ```
 
-## 🔐 微信登录功能配置
-
-### 1. 微信开放平台配置
-1. 访问 [微信开放平台](https://open.weixin.qq.com/)
-2. 注册并认证开发者账号
-3. 创建网站应用
-4. 获取AppID和AppSecret
-5. 配置授权回调域名（如：your-domain.com）
-
-### 2. 系统配置
-在`.env`文件中配置微信登录参数：
-```bash
-# 微信登录配置
-WECHAT_APP_ID=your_wechat_app_id
-WECHAT_APP_SECRET=your_wechat_app_secret
-WECHAT_REDIRECT_URI=https://your-domain.com/api/auth/wechat/callback
-WECHAT_QR_EXPIRE_TIME=300
-WECHAT_SESSION_EXPIRE_TIME=3600
-WECHAT_ENABLE_LOGIN=True
-```
-
-### 3. 功能说明
-- **扫码登录**: 用户通过微信扫描二维码完成登录
-- **会话管理**: 登录后自动创建用户会话，支持自动续期
-- **权限控制**: 未登录用户无法使用会议功能
-- **安全机制**: 支持会话过期、自动登出等安全功能
-
-### 4. 跳过登录（开发模式）
-如需在开发环境中跳过登录验证，可设置：
-```bash
-WECHAT_ENABLE_LOGIN=False
-```
 
 ## 🎯 部署完成检查清单
 
@@ -500,13 +453,11 @@ WECHAT_ENABLE_LOGIN=False
 - [ ] 项目依赖包安装完成
 - [ ] 环境变量配置完成
 - [ ] API密钥配置正确
-- [ ] 微信登录配置完成（如启用）
 - [ ] systemd服务创建并启动
 - [ ] Nginx反向代理配置完成
 - [ ] 防火墙规则配置完成
 - [ ] 服务健康检查通过
 - [ ] 前端页面可以正常访问
-- [ ] 微信登录功能正常（如启用）
 - [ ] WebSocket连接正常
 - [ ] 智能体会议功能正常
 
@@ -519,7 +470,7 @@ WECHAT_ENABLE_LOGIN=False
 4. 服务状态：`sudo systemctl status multi-agent-meeting`
 5. Git状态：`cd /opt/camel_ai && git status`
 
-部署完成后，您可以通过 `http://your-domain.com` 或 `http://your-server-ip` 访问您的多智能体会议系统！
+部署完成后，您可以通过 `http://8.134.128.123` 访问您的多智能体会议系统！
 
 ## 🔄 Git部署的优势
 
@@ -617,14 +568,14 @@ git checkout <commit-hash>                  # 回滚到指定版本
 sudo mkdir -p /opt/camel_ai
 sudo chown $USER:$USER /opt/camel_ai
 cd /opt/camel_ai
-git clone https://github.com/yinjianhui/camel-ai-learning.git .
+git clone https://github.com/yinjianhui/camel_ai.git .
 
 # 2. 运行快速部署脚本
 chmod +x multi_agent_meeting/deploy/quick-deploy.sh
 ./multi_agent_meeting/deploy/quick-deploy.sh
 
-# 3. 配置API密钥
-nano multi_agent_meeting/backend/config.py
+# 3. 验证API密钥配置（已预配置）
+cat multi_agent_meeting/backend/config.py | grep -A 6 "api_keys"
 
 # 4. 重启服务
 sudo systemctl restart multi-agent-meeting

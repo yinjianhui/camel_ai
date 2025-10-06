@@ -1,6 +1,6 @@
 [Unit]
 Description=Multi Agent Meeting System
-Documentation=https://github.com/your-repo/multi-agent-meeting
+Documentation=https://github.com/yinjianhui/camel_ai
 After=network.target network-online.target
 Wants=network-online.target
 
@@ -8,11 +8,11 @@ Wants=network-online.target
 Type=simple
 User=www-data
 Group=www-data
-WorkingDirectory=/opt/multi_agent_meeting
-Environment=PATH=/opt/multi_agent_meeting/venv/bin
-Environment=PYTHONPATH=/opt/multi_agent_meeting
-EnvironmentFile=/opt/multi_agent_meeting/.env
-ExecStart=/opt/multi_agent_meeting/venv/bin/python backend/app_new.py
+WorkingDirectory=/opt/camel_ai
+Environment=PATH=/opt/camel_ai/venv/bin:/usr/local/bin:/usr/bin:/bin
+Environment=PYTHONPATH=/opt/camel_ai
+EnvironmentFile=/opt/camel_ai/multi_agent_meeting/backend/.env
+ExecStart=/opt/camel_ai/venv/bin/python multi_agent_meeting/backend/app_new.py
 ExecReload=/bin/kill -HUP $MAINPID
 Restart=always
 RestartSec=10
@@ -25,7 +25,7 @@ NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
-ReadWritePaths=/opt/multi_agent_meeting
+ReadWritePaths=/opt/camel_ai
 ProtectKernelTunables=true
 ProtectKernelModules=true
 ProtectControlGroups=true

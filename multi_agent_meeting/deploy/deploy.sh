@@ -29,7 +29,7 @@ log_error() {
 }
 
 # 项目配置
-PROJECT_DIR="/opt/multi_agent_meeting"
+PROJECT_DIR="/opt/camel_ai"
 SERVICE_NAME="multi-agent-meeting"
 
 # 检查服务状态
@@ -59,7 +59,7 @@ update_code() {
     
     # 如果使用Git
     if [ -d ".git" ]; then
-        git pull origin main
+        git pull origin master
         log_success "Git代码更新完成"
     else
         log_warning "未检测到Git仓库，请手动更新代码"
@@ -128,7 +128,7 @@ rollback() {
     
     # 恢复备份
     sudo rm -rf "$PROJECT_DIR"
-    sudo cp -r "/opt/backups/multi_agent_meeting/$LATEST_BACKUP/multi_agent_meeting" "$PROJECT_DIR"
+    sudo cp -r "/opt/backups/multi_agent_meeting/$LATEST_BACKUP" "$PROJECT_DIR"
     
     # 重启服务
     sudo systemctl start $SERVICE_NAME
