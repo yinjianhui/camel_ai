@@ -22,7 +22,8 @@ wheels/
 MANIFEST
 
 # Virtual Environment
-venv/
+# 注意：现在允许venv目录上传，以便在服务器上直接使用预配置的虚拟环境
+# 但是忽略其他可能的环境目录
 env/
 ENV/
 env.bak/
@@ -30,12 +31,13 @@ venv.bak/
 .venv/
 
 # Environment variables
+# 允许上传环境配置示例文件，但忽略实际的.env文件
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
-*.env
+# 注意：.env.example 文件需要能够上传，所以不在忽略列表中
 
 # IDE
 .vscode/
@@ -102,4 +104,5 @@ multi_agent_meeting/backend/routes/__pycache__/
 multi_agent_meeting/backend/services/__pycache__/
 
 # Deployment
+# 允许上传部署脚本，但忽略生产环境配置文件
 deploy/production.env
