@@ -8,7 +8,9 @@
 import os
 import sys
 import re
-from typing import Optional
+import json
+from datetime import datetime
+from typing import Optional, Dict, Any
 
 
 def setup_console_encoding():
@@ -173,3 +175,112 @@ def validate_required_fields(data: dict, required_fields: list) -> list:
 def safe_get(dictionary: dict, key: str, default: any = None) -> any:
     """安全获取字典值"""
     return dictionary.get(key, default) if dictionary else default
+
+
+def save_meeting_content(meeting_data: Dict[str, Any], save_dir: str) -> str:
+    """
+    保存会议内容到文件
+    
+    Args:
+        meeting_data: 会议数据，包含会议状态、消息、总结等信息
+        save_dir: 保存目录
+    
+    Returns:
+        保存的文件路径
+    """
+    try:
+        # 确保保存目录存在
+        os.makedirs(save_dir, exist_ok=True)
+        
+        # 生成文件名（使用会议ID和时间戳）
+        meeting_id = meeting_data.get('meeting_id', f"meeting_{int(datetime.now().timestamp())}")
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        
+        # 创建会议数据目录
+        meeting_dir = os.path.join(save_dir, f"{meeting_id}_{timestamp}")
+        os.makedirs(meeting_dir, exist_ok=True)
+        
+        # 保存会议基本信息
+        meeting_info = {
+            'meeting_id': meeting_id,
+            'topic': meeting_data.get('topic', ''),
+            'background': meeting_data.get('background', ''),
+            'start_time': meeting_data.get('start_time'),
+            'end_time': meeting_data.get('end_time'),
+            'total_rounds': meeting_data.get('current_round', 0),
+            'total_messages': len(meeting_data.get('messages', [])),
+            'participants': meeting_data.get('participants', []),
+            'save_timestamp': datetime.now().isoformat()
+        }
+        
+        # 保存会议基本信息为JSON
+        info_file = os.path.join(meeting_dir, 'meeting_info.json')
+        with open(info_file, 'w', encoding='utf-8') as f:
+            json.dump(meeting_info, f, ensure_ascii=False, indent=2)
+        
+        # 保存会议消息记录
+        messages_file = os.path.join(meeting_dir, 'messages.json')
+        with open(messages_file, 'w', encoding='utf-8') as f:
+            json.dump(meeting_data.get('messages', []), f, ensure_ascii=False, indent=2)
+        
+        # 保存会议总结
+        summary = meeting_data.get('summary', {})
+        if summary:
+            summary_file = os.path.join(meeting_dir, 'summary.json')
+            with open(summary_file, 'w', encoding='utf-8') as f:
+                json.dump(summary, f, ensure_ascii=False, indent=2)
+        
+        # 保存可读的会议记录文本
+        transcript_file = os.path.join(meeting_dir, 'transcript.txt')
+        with open(transcript_file, 'w', encoding='utf-8') as f:
+            f.write(f"多智能体会议记录\n")
+            f.write(f"会议主题：{meeting_info['topic']}\n")
+            f.write(f"会议背景：{meeting_info['background']}\n")
+            f.write(f"会议ID：{meeting_info['meeting_id']}\n")
+            f.write(f"保存时间：{meeting_info['save_timestamp']}\n")
+            f.write(f"总轮次：{meeting_info['total_rounds']}\n")
+            f.write(f"总发言数：{meeting_info['total_messages']}\n")
+            f.write(f"参与者：{', '.join(meeting_info['participants'])}\n")
+            f.write("\n=== 会议内容 ===\n\n")
+            
+            # 写入消息记录
+            for msg in meeting_data.get('messages', []):
+                timestamp = datetime.fromtimestamp(msg.get('timestamp', 0)).strftime('%H:%M:%S')
+                f.write(f"[{timestamp}] {msg.get('role', 'Unknown')}: {msg.get('content', '')}\n\n")
+            
+            # 写入会议总结
+            if summary:
+                f.write("\n=== 会议总结 ===\n\n")
+                f.write(summary.get('summary_content', '无总结内容'))
+        
+        # 保存索引文件（用于快速查找所有会议）
+        index_file = os.path.join(save_dir, 'meeting_index.json')
+        index_data = []
+        if os.path.exists(index_file):
+            try:
+                with open(index_file, 'r', encoding='utf-8') as f:
+                    index_data = json.load(f)
+            except:
+                index_data = []
+        
+        # 添加新会议到索引
+        index_entry = {
+            'meeting_id': meeting_id,
+            'topic': meeting_info['topic'],
+            'save_timestamp': meeting_info['save_timestamp'],
+            'meeting_dir': os.path.basename(meeting_dir),
+            'total_rounds': meeting_info['total_rounds'],
+            'total_messages': meeting_info['total_messages'],
+            'participants': meeting_info['participants']
+        }
+        index_data.append(index_entry)
+        
+        # 保存更新后的索引
+        with open(index_file, 'w', encoding='utf-8') as f:
+            json.dump(index_data, f, ensure_ascii=False, indent=2)
+        
+        return meeting_dir
+        
+    except Exception as e:
+        print(f"保存会议内容失败: {e}")
+        raise

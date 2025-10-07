@@ -12,7 +12,7 @@ from typing import Dict, List, Optional, Any
 from utils import (
     setup_console_encoding, post_process_ceo_content, 
     check_ceo_wants_to_end_meeting, remove_next_speaker_references,
-    clean_unprofessional_content, format_duration
+    clean_unprofessional_content, format_duration, save_meeting_content
 )
 
 from camel.messages import BaseMessage
@@ -484,6 +484,9 @@ class MeetingService:
             # 停用会议
             self.state.is_active = False
             
+            # 保存会议内容到后台
+            self._save_meeting_to_backend(summary)
+            
             self.logger.info(f"会议结束: meeting_id={self.state.meeting_id}, duration={summary.get_formatted_duration()}")
             
             return {
@@ -628,3 +631,34 @@ class MeetingService:
             "current_speaker_id": self.state.current_speaker_id,
             "meeting_id": self.state.meeting_id
         }
+    
+    def _save_meeting_to_backend(self, summary: MeetingSummary) -> None:
+        """
+        保存会议内容到后台
+        
+        Args:
+            summary: 会议总结对象
+        """
+        try:
+            # 准备会议数据
+            meeting_data = {
+                'meeting_id': self.state.meeting_id,
+                'topic': self.state.topic,
+                'background': self.state.background,
+                'start_time': self.state.start_time,
+                'end_time': self.state.end_time,
+                'current_round': self.state.current_round,
+                'messages': self.state.messages,
+                'speaker_counts': self.state.speaker_counts,
+                'participants': [agent.role for agent in self.agent_service.list_agents()],
+                'summary': summary.to_dict()
+            }
+            
+            # 保存会议内容
+            saved_path = save_meeting_content(meeting_data, config.meetings_save_dir)
+            
+            self.logger.info(f"会议内容已保存到后台: {saved_path}")
+            
+        except Exception as e:
+            self.logger.error(f"保存会议内容到后台失败: error={e}")
+            # 不抛出异常，避免影响会议结束流程

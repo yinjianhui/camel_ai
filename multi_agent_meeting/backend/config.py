@@ -122,10 +122,12 @@ class Config:
         # 文件路径配置
         self.logs_dir: str = os.path.join(os.path.dirname(__file__), 'logs')
         self.temp_dir: str = os.path.join(os.path.dirname(__file__), 'temp')
+        self.meetings_save_dir: str = os.path.join(os.path.dirname(__file__), 'saved_meetings')
         
         # 确保目录存在
         os.makedirs(self.logs_dir, exist_ok=True)
         os.makedirs(self.temp_dir, exist_ok=True)
+        os.makedirs(self.meetings_save_dir, exist_ok=True)
     
     def get_api_key(self, index: int) -> str:
         """获取指定索引的API密钥"""
@@ -211,7 +213,8 @@ class Config:
             },
             'paths': {
                 'logs_dir': self.logs_dir,
-                'temp_dir': self.temp_dir
+                'temp_dir': self.temp_dir,
+                'meetings_save_dir': self.meetings_save_dir
             }
         }
 
