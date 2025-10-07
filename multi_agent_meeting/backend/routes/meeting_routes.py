@@ -8,10 +8,11 @@ import os
 import time
 import tempfile
 import atexit
+import json
 from datetime import datetime
 from flask import Blueprint, request, jsonify, send_file
 
-from utils import setup_console_encoding
+from utils import setup_console_encoding, get_latest_meeting_transcript
 
 from models import MeetingConfig
 from services.meeting_service import MeetingService
@@ -187,13 +188,26 @@ def download_transcript():
     logger.info("收到下载会议记录请求")
     
     try:
-        # 检查是否有会议记录
+        # 获取当前会议状态
         state = meeting_service.get_meeting_state()
-        if not state.messages:
-            logger.warning("没有会议记录可下载")
-            return jsonify({"status": "error", "error": "没有会议记录可下载"}), 400
         
-        transcript = meeting_service.get_transcript()
+        # 如果会议还未结束，从内存中获取记录
+        if state.is_active and not state.is_ended():
+            logger.info("会议进行中，从内存中获取会议记录")
+            if not state.messages:
+                logger.warning("没有会议记录可下载")
+                return jsonify({"status": "error", "error": "没有会议记录可下载"}), 400
+            
+            transcript = meeting_service.get_transcript()
+        else:
+            # 会议已结束，从本地保存的文件中读取记录
+            logger.info("会议已结束，从本地保存文件中获取会议记录")
+            meeting_id = state.meeting_id if state.meeting_id else None
+            transcript = get_latest_meeting_transcript(config.meetings_save_dir, meeting_id)
+            
+            if transcript is None:
+                logger.warning("找不到保存的会议记录")
+                return jsonify({"status": "error", "error": "找不到保存的会议记录"}), 400
         
         # 创建临时文件
         filename = f"meeting_transcript_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
@@ -278,5 +292,3 @@ def meeting_status():
     except Exception as e:
         logger.error(f"获取会议状态失败: error={e}")
         return jsonify({"status": "error", "error": str(e)}), 500
-
-

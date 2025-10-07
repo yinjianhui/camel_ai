@@ -284,3 +284,61 @@ def save_meeting_content(meeting_data: Dict[str, Any], save_dir: str) -> str:
     except Exception as e:
         print(f"保存会议内容失败: {e}")
         raise
+
+
+def get_latest_meeting_transcript(save_dir: str, meeting_id: str = None) -> Optional[str]:
+    """
+    获取最新的会议记录文本
+    
+    Args:
+        save_dir: 会议保存目录
+        meeting_id: 指定的会议ID，如果为None则获取最新的会议
+    
+    Returns:
+        会议记录文本，如果找不到则返回None
+    """
+    try:
+        # 检查索引文件是否存在
+        index_file = os.path.join(save_dir, 'meeting_index.json')
+        if not os.path.exists(index_file):
+            return None
+        
+        # 读取索引文件
+        with open(index_file, 'r', encoding='utf-8') as f:
+            index_data = json.load(f)
+        
+        if not index_data:
+            return None
+        
+        # 查找目标会议
+        target_meeting = None
+        if meeting_id:
+            # 查找指定会议ID的最新记录
+            for meeting in reversed(index_data):
+                if meeting['meeting_id'] == meeting_id:
+                    target_meeting = meeting
+                    break
+        else:
+            # 获取最新的会议
+            target_meeting = index_data[-1]
+        
+        if not target_meeting:
+            return None
+        
+        # 构建会议目录路径
+        meeting_dir = os.path.join(save_dir, target_meeting['meeting_dir'])
+        transcript_file = os.path.join(meeting_dir, 'transcript.txt')
+        
+        # 检查会议记录文件是否存在
+        if not os.path.exists(transcript_file):
+            return None
+        
+        # 读取会议记录
+        with open(transcript_file, 'r', encoding='utf-8') as f:
+            transcript_content = f.read()
+        
+        return transcript_content
+        
+    except Exception as e:
+        print(f"获取会议记录失败: {e}")
+        return None

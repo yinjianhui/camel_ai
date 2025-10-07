@@ -96,6 +96,7 @@ dmypy.json
 # Project specific
 multi_agent_meeting/backend/logs/
 multi_agent_meeting/backend/temp/
+multi_agent_meeting/backend/saved_meetings/
 multi_agent_meeting/backend/__pycache__/
 multi_agent_meeting/backend/routes/__pycache__/
 multi_agent_meeting/backend/services/__pycache__/
