@@ -36,7 +36,7 @@ createApp({
             socket: null,
             
             // API配置
-            apiBase: 'http://localhost:5000',
+            apiBase: 'http://111.229.108.199',
             
             // 系统状态
             systemStatus: {
