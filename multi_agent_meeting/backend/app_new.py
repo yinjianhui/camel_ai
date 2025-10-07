@@ -113,6 +113,25 @@ def print_startup_info():
     logger.info(f"  临时目录: {config.temp_dir}")
 
 
+def create_gunicorn_app():
+    """为gunicorn创建应用实例"""
+    # 验证环境
+    if not validate_environment():
+        logger.error("环境验证失败，程序退出")
+        sys.exit(1)
+    
+    # 打印启动信息
+    print_startup_info()
+    
+    # 创建应用
+    app, socketio = create_app()
+    
+    # 将socketio实例添加到app中，供gunicorn使用
+    app.socketio = socketio
+    
+    return app
+
+
 def main():
     """主函数"""
     try:
@@ -129,12 +148,26 @@ def main():
         
         # 启动应用
         logger.info("启动Web服务器...")
-        socketio.run(
-            app, 
-            host=config.flask_host, 
-            port=config.flask_port, 
-            debug=config.flask_debug
-        )
+        
+        # 检查是否为生产环境
+        if not config.flask_debug:
+            logger.info("生产环境模式 - 使用生产服务器配置")
+            # 生产环境设置
+            socketio.run(
+                app, 
+                host=config.flask_host, 
+                port=config.flask_port, 
+                debug=False,
+                allow_unsafe_werkzeug=True  # 允许在生产环境使用Werkzeug
+            )
+        else:
+            # 开发环境设置
+            socketio.run(
+                app, 
+                host=config.flask_host, 
+                port=config.flask_port, 
+                debug=config.flask_debug
+            )
         
     except KeyboardInterrupt:
         logger.info("收到中断信号，正在关闭服务器...")
@@ -145,6 +178,10 @@ def main():
         logger.info("服务器已关闭")
     
     return 0
+
+
+# 创建gunicorn应用实例
+app = create_gunicorn_app()
 
 
 if __name__ == '__main__':
