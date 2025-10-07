@@ -35,8 +35,8 @@ createApp({
             // WebSocket
             socket: null,
             
-            // API配置
-            apiBase: 'http://localhost:5000',
+            // API配置 - 使用相对路径，自动使用当前域名
+            apiBase: '',
             
             // 系统状态
             systemStatus: {
@@ -802,4 +802,3 @@ createApp({
         document.removeEventListener('keydown', this.handleKeydown);
     }
 }).mount('#app');
-

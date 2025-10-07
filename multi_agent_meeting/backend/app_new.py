@@ -42,7 +42,7 @@ def create_app():
     logger.info("创建Flask应用")
     
     # 创建Flask应用
-    app = Flask(__name__)
+    app = Flask(__name__, static_folder='../frontend', static_url_path='')
     app.config['SECRET_KEY'] = config.flask_secret_key
     
     # 配置CORS
@@ -52,6 +52,14 @@ def create_app():
     # 注册蓝图
     app.register_blueprint(meeting_bp)
     logger.info("API路由注册完成")
+    
+    # 添加根路由，提供前端页面
+    @app.route('/')
+    def index():
+        """提供前端主页"""
+        return app.send_static_file('index.html')
+    
+    logger.info("根路由注册完成")
     
     # 创建SocketIO实例
     socketio = SocketIO(
