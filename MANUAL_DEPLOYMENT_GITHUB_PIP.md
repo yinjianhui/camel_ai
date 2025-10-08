@@ -62,6 +62,51 @@ git clone https://github.com/yinjianhui/camel_ai.git .
 ls -la
 ```
 
+### 第三步（新增）：前端API配置优化说明
+**重要更新**: 前端API配置已优化，使用相对路径自动适配服务器环境。
+
+**优化内容**:
+- **前端配置**: 将硬编码的API地址改为相对路径
+- **自动适配**: 前端自动使用当前域名进行API调用
+- **环境无关**: 开发和生产环境使用相同配置
+
+**优化详情**:
+```javascript
+// 优化前（硬编码IP地址）
+apiBase: 'http://111.229.108.199',
+
+// 优化后（相对路径）
+apiBase: '', // 使用相对路径自动适应当前域名
+```
+
+**优势**:
+1. **自动适配**: 无需手动修改前端配置
+2. **环境无关**: 开发和生产环境配置一致
+3. **维护简单**: 服务器IP变更时无需修改前端代码
+4. **部署灵活**: 支持任意域名和IP地址访问
+
+**API调用示例**:
+```javascript
+// 健康检查
+const response = await fetch(`/api/health`, {
+    method: 'GET',
+    timeout: 5000
+});
+
+// 启动会议
+const data = await this.apiCall(`/api/start_meeting`, {
+    method: 'POST',
+    body: JSON.stringify({...})
+});
+
+// WebSocket连接
+this.socket = io('', { // 使用相对路径
+    transports: ['websocket', 'polling'],
+    timeout: 20000,
+    forceNew: true
+});
+```
+
 **预期输出应该包含以下目录和文件：**
 ```
 drwxr-xr-x  4 root root    4096 Oct  7 14:00 Legion

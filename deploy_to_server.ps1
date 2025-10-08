@@ -85,7 +85,20 @@ function Start-Deployment {
     Write-ColoredOutput "`n📥 克隆项目代码..." "Yellow"
     Invoke-SSHCommand -Command "cd ${PROJECT_DIR} && git clone ${GITHUB_REPO} ." -ErrorMessage "克隆项目失败"
     
-    # 6. 验证预配置虚拟环境
+    # 6. 前端API配置优化说明
+    Write-ColoredOutput "`n🌐 前端API配置优化说明..." "Yellow"
+    Write-ColoredOutput "重要更新: 前端API配置已优化，使用相对路径自动适配服务器环境" "Cyan"
+    Write-ColoredOutput "优化内容:" "Cyan"
+    Write-ColoredOutput "  - 前端配置: 将硬编码的API地址改为相对路径" "Cyan"
+    Write-ColoredOutput "  - 自动适配: 前端自动使用当前域名进行API调用" "Cyan"
+    Write-ColoredOutput "  - 环境无关: 开发和生产环境使用相同配置" "Cyan"
+    Write-ColoredOutput "优势:" "Cyan"
+    Write-ColoredOutput "  1. 自动适配: 无需手动修改前端配置" "Cyan"
+    Write-ColoredOutput "  2. 环境无关: 开发和生产环境配置一致" "Cyan"
+    Write-ColoredOutput "  3. 维护简单: 服务器IP变更时无需修改前端代码" "Cyan"
+    Write-ColoredOutput "  4. 部署灵活: 支持任意域名和IP地址访问" "Cyan"
+    
+    # 7. 验证预配置虚拟环境
     Write-ColoredOutput "`n🔍 验证预配置虚拟环境..." "Yellow"
     $venvCheck = Invoke-SSHCommand -Command "cd ${PROJECT_DIR} && if [[ -d 'venv' ]]; then echo 'venv目录存在'; else echo 'venv目录不存在'; fi"
     

@@ -35,15 +35,17 @@ createApp({
             // WebSocket
             socket: null,
             
-            // API配置
-            apiBase: 'http://111.229.108.199',
+            // API配置 - 使用相对路径自动适应当前域名
+            apiBase: '',
             
             // 系统状态
             systemStatus: {
                 backendConnected: false,
                 lastHealthCheck: null,
                 connectionRetries: 0,
-                maxRetries: 3
+                maxRetries: 3,
+                serverUrl: window.location.origin, // 当前服务器地址
+                apiBaseUrl: '' // API基础URL（相对路径）
             },
             
             // 日志配置
@@ -92,6 +94,28 @@ createApp({
         getMaxRounds() {
             // 返回当前的最大轮次配置
             return this.maxRounds;
+        },
+
+        // 初始化系统状态
+        initializeSystemStatus() {
+            this.log('info', '初始化系统状态');
+            
+            // 设置服务器URL和API基础URL
+            this.systemStatus.serverUrl = window.location.origin;
+            this.systemStatus.apiBaseUrl = this.apiBase;
+            
+            // 记录当前环境信息
+            this.log('info', '系统状态初始化完成', {
+                serverUrl: this.systemStatus.serverUrl,
+                apiBaseUrl: this.systemStatus.apiBaseUrl,
+                userAgent: navigator.userAgent,
+                timestamp: new Date().toISOString()
+            });
+            
+            // 显示系统信息（仅在调试模式）
+            if (this.enableDebugLogs && this.logLevel === 'debug') {
+                this.showNotification(`系统已启动: ${this.systemStatus.serverUrl}`, 'info');
+            }
         },
         
         // 日志记录方法
@@ -770,6 +794,9 @@ createApp({
     },
     
     mounted() {
+        // 初始化系统状态
+        this.initializeSystemStatus();
+        
         // 添加键盘事件监听
         document.addEventListener('keydown', this.handleKeydown);
         
@@ -802,4 +829,3 @@ createApp({
         document.removeEventListener('keydown', this.handleKeydown);
     }
 }).mount('#app');
-
