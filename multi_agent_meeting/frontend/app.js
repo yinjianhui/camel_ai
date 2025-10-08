@@ -871,6 +871,31 @@ createApp({
             }
         },
 
+        // 处理Unicode转义字符
+        decodeUnicodeString(str) {
+            if (!str || typeof str !== 'string') {
+                return str;
+            }
+            
+            try {
+                // 方法1：使用JSON.parse处理Unicode转义字符
+                if (str.includes('\\u')) {
+                    return JSON.parse('"' + str + '"');
+                }
+                return str;
+            } catch (error) {
+                try {
+                    // 方法2：手动替换Unicode转义字符
+                    return str.replace(/\\u[\dA-Fa-f]{4}/g, (match) => {
+                        return String.fromCharCode(parseInt(match.replace(/\\u/g, ''), 16));
+                    });
+                } catch (error2) {
+                    this.log('warn', 'Unicode字符解析失败，使用原始内容', error2);
+                    return str;
+                }
+            }
+        },
+
         // 处理新消息
         handleNewMessage(message) {
             this.log('info', '收到新消息', message);
@@ -894,6 +919,11 @@ createApp({
                     this.log('warn', '检测到重复消息，跳过处理', message);
                     return;
                 }
+            }
+            
+            // 处理消息内容中的Unicode转义字符
+            if (message.content && typeof message.content === 'string') {
+                message.content = this.decodeUnicodeString(message.content);
             }
             
             // 直接添加消息到列表（一次性显示）

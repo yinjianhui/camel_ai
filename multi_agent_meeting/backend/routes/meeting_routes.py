@@ -122,13 +122,16 @@ def ceo_speak():
                 **result['message'],
                 'message_id': f"ceo_{result['current_round']}_{int(time.time() * 1000)}"
             }
-            # 通过WebSocket发送新消息
-            current_app.socketio.emit('new_message', message_with_id)
+            # 通过WebSocket发送新消息，确保Unicode字符正确处理
+            current_app.socketio.emit('new_message', message_with_id, ensure_ascii=False)
             logger.info(f"CEO发言成功: round={result['current_round']}, next_speaker={result.get('next_speaker_id')}")
         else:
             logger.warning(f"CEO发言失败: {result.get('error')}")
         
-        return jsonify(result)
+        # 确保JSON响应正确处理Unicode字符
+        response = jsonify(result)
+        response.headers['Content-Type'] = 'application/json; charset=utf-8'
+        return response
         
     except Exception as e:
         logger.error(f"CEO发言处理失败: error={e}")
@@ -149,13 +152,16 @@ def agent_speak(agent_id):
                 **result['message'],
                 'message_id': f"agent_{agent_id}_{result['current_round']}_{int(time.time() * 1000)}"
             }
-            # 通过WebSocket发送新消息
-            current_app.socketio.emit('new_message', message_with_id)
+            # 通过WebSocket发送新消息，确保Unicode字符正确处理
+            current_app.socketio.emit('new_message', message_with_id, ensure_ascii=False)
             logger.info(f"智能体发言成功: agent_id={agent_id}, round={result['current_round']}")
         else:
             logger.warning(f"智能体发言失败: agent_id={agent_id}, error={result.get('error')}")
         
-        return jsonify(result)
+        # 确保JSON响应正确处理Unicode字符
+        response = jsonify(result)
+        response.headers['Content-Type'] = 'application/json; charset=utf-8'
+        return response
         
     except Exception as e:
         logger.error(f"智能体发言处理失败: agent_id={agent_id}, error={e}")
