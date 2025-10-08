@@ -1027,15 +1027,15 @@ createApp({
     },
     
         beforeUnmount() {
-        // 断开WebSocket连接
-        if (this.socket) {
-            this.socket.disconnect();
+            // 断开WebSocket连接
+            if (this.socket) {
+                this.socket.disconnect();
+            }
+            
+            // 停止CEO定时器
+            this.stopCeoTimer();
+            
+            // 移除键盘事件监听
+            document.removeEventListener('keydown', this.handleKeydown);
         }
-        
-        // 停止CEO定时器
-        this.stopCeoTimer();
-        
-        // 移除键盘事件监听
-        document.removeEventListener('keydown', this.handleKeydown);
-    }
 }).mount('#app');
