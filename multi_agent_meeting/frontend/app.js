@@ -349,40 +349,163 @@ createApp({
             }
             
             try {
+                // 优化WebSocket连接配置
                 this.socket = io(this.apiBase, {
+                    // 传输协议优先级：先尝试websocket，失败后回退到polling
                     transports: ['websocket', 'polling'],
-                    timeout: 20000,
-                    forceNew: true
+                    
+                    // 连接超时时间
+                    timeout: 30000,
+                    
+                    // 强制创建新连接
+                    forceNew: true,
+                    
+                    // 重连配置
+                    reconnection: true,
+                    reconnectionAttempts: 10, // 增加重连尝试次数
+                    reconnectionDelay: 1000, // 初始重连延迟
+                    reconnectionDelayMax: 5000, // 最大重连延迟
+                    randomizationFactor: 0.5, // 随机化因子避免重连风暴
+                    
+                    // Engine.IO 配置
+                    upgrade: true, // 允许传输协议升级
+                    rememberUpgrade: false, // 不记住升级，避免缓存问题
+                    path: '/socket.io/', // 明确指定路径
+                    
+                    // 超时配置
+                    pingTimeout: 60000, // ping超时时间
+                    pingInterval: 25000, // ping间隔时间
+                    
+                    // 调试配置
+                    autoConnect: true, // 自动连接
+                    multiplex: false, // 禁用多路复用，避免连接冲突
+                    
+                    // 安全配置
+                    withCredentials: false, // 禁用凭据，简化跨域
+                    transports: ['websocket', 'polling'] // 再次确保传输协议
                 });
                 
+                // 连接成功事件
                 this.socket.on('connect', () => {
-                    this.log('info', 'WebSocket连接成功');
+                    this.log('info', 'WebSocket连接成功', { 
+                        socketId: this.socket.id,
+                        transport: this.socket.io.engine.transport.name 
+                    });
                     this.showNotification('实时连接已建立', 'success');
                 });
                 
+                // 连接断开事件
                 this.socket.on('disconnect', (reason) => {
-                    this.log('warn', 'WebSocket连接断开', { reason });
-                    this.showNotification('连接已断开，正在尝试重连...', 'error');
+                    this.log('warn', 'WebSocket连接断开', { 
+                        reason,
+                        wasConnecting: this.socket.io.engine?.priorTransport?.name
+                    });
+                    
+                    // 根据断开原因显示不同的提示
+                    if (reason === 'io server disconnect') {
+                        this.showNotification('服务器主动断开连接，正在重新连接...', 'warn');
+                    } else if (reason === 'transport close') {
+                        this.showNotification('网络连接中断，正在尝试重连...', 'error');
+                    } else if (reason === 'ping timeout') {
+                        this.showNotification('连接超时，正在重新建立连接...', 'warn');
+                    } else {
+                        this.showNotification('连接已断开，正在尝试重连...', 'error');
+                    }
                 });
                 
+                // 连接错误事件
                 this.socket.on('connect_error', (error) => {
-                    this.log('error', 'WebSocket连接错误', error);
-                    this.showNotification('连接失败，请检查网络', 'error');
+                    this.log('error', 'WebSocket连接错误', { 
+                        error: error.message,
+                        type: error.type,
+                        description: error.description
+                    });
+                    
+                    // 根据错误类型显示不同的提示
+                    if (error.message.includes('Invalid frame header')) {
+                        this.showNotification('WebSocket协议错误，正在尝试降级连接...', 'error');
+                        // 强制使用polling传输
+                        if (this.socket.io) {
+                            this.socket.io.opts.transports = ['polling'];
+                        }
+                    } else if (error.message.includes('Network')) {
+                        this.showNotification('网络连接失败，请检查网络设置', 'error');
+                    } else if (error.message.includes('timeout')) {
+                        this.showNotification('连接超时，正在重新尝试...', 'warn');
+                    } else {
+                        this.showNotification('连接失败，请检查网络状态', 'error');
+                    }
                 });
                 
+                // 重连尝试事件
+                this.socket.io.on('reconnect_attempt', (attemptNumber) => {
+                    this.log('info', 'WebSocket重连尝试', { attemptNumber });
+                    this.showNotification(`正在尝试重新连接 (${attemptNumber}/10)...`, 'warn');
+                });
+                
+                // 重连成功事件
+                this.socket.io.on('reconnect', () => {
+                    this.log('info', 'WebSocket重连成功');
+                    this.showNotification('连接已恢复', 'success');
+                });
+                
+                // 重连失败事件
+                this.socket.io.on('reconnect_failed', () => {
+                    this.log('error', 'WebSocket重连失败');
+                    this.showNotification('无法建立连接，请刷新页面重试', 'error');
+                });
+                
+                // 消息接收事件
                 this.socket.on('new_message', (message) => {
                     this.log('debug', '收到新消息', message);
                     this.handleNewMessage(message);
                 });
                 
+                // 其他错误事件
                 this.socket.on('error', (error) => {
                     this.log('error', 'WebSocket错误', error);
-                    this.showNotification('连接出现错误', 'error');
+                    this.showNotification('连接出现错误，正在尝试恢复...', 'error');
                 });
+                
+                // 监听传输协议变化
+                if (this.socket.io.engine) {
+                    this.socket.io.engine.on('upgrade', (transport) => {
+                        this.log('info', 'WebSocket传输协议升级', { from: this.socket.io.engine.priorTransport?.name, to: transport.name });
+                    });
+                }
                 
             } catch (error) {
                 this.log('error', 'WebSocket初始化失败', error);
-                this.showNotification('实时连接初始化失败', 'error');
+                this.showNotification('实时连接初始化失败，请刷新页面重试', 'error');
+                
+                // 初始化失败后，尝试降级到仅使用polling
+                setTimeout(() => {
+                    this.log('info', '尝试降级到HTTP长轮询连接');
+                    try {
+                        this.socket = io(this.apiBase, {
+                            transports: ['polling'],
+                            timeout: 30000,
+                            forceNew: true,
+                            reconnection: true,
+                            reconnectionAttempts: 5,
+                            reconnectionDelay: 2000
+                        });
+                        
+                        this.socket.on('connect', () => {
+                            this.log('info', '降级连接成功');
+                            this.showNotification('已切换到备用连接模式', 'success');
+                        });
+                        
+                        this.socket.on('new_message', (message) => {
+                            this.log('debug', '收到新消息（降级模式）', message);
+                            this.handleNewMessage(message);
+                        });
+                        
+                    } catch (fallbackError) {
+                        this.log('error', '降级连接也失败', fallbackError);
+                        this.showNotification('无法建立任何连接，请检查网络和服务器状态', 'error');
+                    }
+                }, 2000);
             }
         },
         
@@ -791,6 +914,60 @@ createApp({
             }
         },
 
+        // CEO定时器管理
+        startCeoTimer() {
+            this.log('info', '启动CEO定时器');
+            
+            // 清除现有定时器
+            if (this.ceoTimer) {
+                clearInterval(this.ceoTimer);
+                this.ceoTimer = null;
+            }
+            
+            // 设置新的定时器，定期检查会议状态
+            this.ceoTimer = setInterval(() => {
+                this.checkMeetingStatus();
+            }, 5000); // 每5秒检查一次
+            
+            // 立即执行一次检查
+            this.checkMeetingStatus();
+        },
+
+        // 停止CEO定时器
+        stopCeoTimer() {
+            this.log('info', '停止CEO定时器');
+            
+            if (this.ceoTimer) {
+                clearInterval(this.ceoTimer);
+                this.ceoTimer = null;
+            }
+        },
+
+        // 检查会议状态
+        async checkMeetingStatus() {
+            try {
+                const data = await this.apiCall(`${this.apiBase}/api/meeting_status`, {
+                    method: 'GET'
+                });
+                
+                if (data.status === 'success' && data.meeting_state) {
+                    this.log('debug', '会议状态检查成功', data.meeting_state);
+                    
+                    // 如果会议已结束但前端未更新，则更新状态
+                    if (data.meeting_state.status === 'ended' && !this.showSummary) {
+                        this.log('info', '检测到会议已结束，更新前端状态');
+                        this.stopCeoTimer();
+                        this.isThinking = false;
+                        this.currentSpeakerId = null;
+                        this.waitingForCeo = false;
+                        this.generateSummary();
+                    }
+                }
+            } catch (error) {
+                this.log('warn', '检查会议状态失败', error);
+            }
+        },
+
     },
     
     mounted() {
@@ -824,6 +1001,9 @@ createApp({
         if (this.socket) {
             this.socket.disconnect();
         }
+        
+        // 停止CEO定时器
+        this.stopCeoTimer();
         
         // 移除键盘事件监听
         document.removeEventListener('keydown', this.handleKeydown);

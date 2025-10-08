@@ -89,14 +89,20 @@ function Start-Deployment {
     Write-ColoredOutput "`n🌐 前端API配置优化说明..." "Yellow"
     Write-ColoredOutput "重要更新: 前端API配置已优化，使用相对路径自动适配服务器环境" "Cyan"
     Write-ColoredOutput "优化内容:" "Cyan"
-    Write-ColoredOutput "  - 前端配置: 将硬编码的API地址改为相对路径" "Cyan"
-    Write-ColoredOutput "  - 自动适配: 前端自动使用当前域名进行API调用" "Cyan"
-    Write-ColoredOutput "  - 环境无关: 开发和生产环境使用相同配置" "Cyan"
+    Write-ColoredOutput "  - 前端配置: 使用相对路径（空字符串）自动适配当前域名" "Cyan"
+    Write-ColoredOutput "  - 自动适配: 前端自动使用当前访问的域名进行API调用" "Cyan"
+    Write-ColoredOutput "  - 环境无关: 开发和生产环境使用相同配置，无需修改" "Cyan"
     Write-ColoredOutput "优势:" "Cyan"
-    Write-ColoredOutput "  1. 自动适配: 无需手动修改前端配置" "Cyan"
-    Write-ColoredOutput "  2. 环境无关: 开发和生产环境配置一致" "Cyan"
-    Write-ColoredOutput "  3. 维护简单: 服务器IP变更时无需修改前端代码" "Cyan"
-    Write-ColoredOutput "  4. 部署灵活: 支持任意域名和IP地址访问" "Cyan"
+    Write-ColoredOutput "  1. 完全自动: 无需任何手动配置，前端自动适配" "Cyan"
+    Write-ColoredOutput "  2. 环境无关: 开发、测试、生产环境配置完全一致" "Cyan"
+    Write-ColoredOutput "  3. 零维护: 服务器IP、域名变更时完全无需修改前端代码" "Cyan"
+    Write-ColoredOutput "  4. 最大灵活性: 支持任意访问方式（IP、域名、端口等）" "Cyan"
+    Write-ColoredOutput "部署优势:" "Cyan"
+    Write-ColoredOutput "  - 开箱即用: 部署后前端立即自动适配服务器环境" "Cyan"
+    Write-ColoredOutput "  - 无需配置: 不需要在前端代码中配置任何服务器地址" "Cyan"
+    Write-ColoredOutput "  - 无缝切换: 支持IP访问、域名访问、带端口访问等多种方式" "Cyan"
+    Write-ColoredOutput "  - 负载均衡友好: 支持多服务器负载均衡环境" "Cyan"
+    Write-ColoredOutput "  - HTTPS友好: 自动适配HTTP和HTTPS协议" "Cyan"
     
     # 7. 验证预配置虚拟环境
     Write-ColoredOutput "`n🔍 验证预配置虚拟环境..." "Yellow"
@@ -138,13 +144,13 @@ function Start-Deployment {
     Invoke-SSHCommand -Command "cd ${PROJECT_DIR} && cp multi_agent_meeting/backend/env.example multi_agent_meeting/backend/.env" -ErrorMessage "环境变量配置失败"
     
     # 8. 验证API密钥配置
-    Write-ColoredOutput "`n🔑 验证API密钥配置..." "Yellow"
+    Write-ColoredOutput "`n� 验证API密钥配置..." "Yellow"
     $apiCheck = Invoke-SSHCommand -Command "cd ${PROJECT_DIR} && cat multi_agent_meeting/backend/config.py | grep -A 6 'api_keys'"
     Write-ColoredOutput "API密钥配置:" "Cyan"
     Write-ColoredOutput $apiCheck "White"
     
     # 9. 创建systemd服务
-    Write-ColoredOutput "`n🔧 创建systemd服务..." "Yellow"
+    Write-ColoredOutput "`n� 创建systemd服务..." "Yellow"
     $serviceConfig = @"
 [Unit]
 Description=Multi Agent Meeting System

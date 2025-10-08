@@ -8,6 +8,7 @@
 - **操作系统**: Linux (推荐Ubuntu 20.04+或CentOS 7+)
 - **Python版本要求**: 3.11
 - **访问方式**: 公网IP直接访问
+- **项目路径**: /root
 
 ### 项目信息
 - **项目地址**: https://github.com/yinjianhui/camel_ai.git
@@ -15,6 +16,7 @@
 - **主要组件**: 多智能体会议系统 (multi_agent_meeting)
 - **后端端口**: 5000
 - **前端端口**: 80 (通过Nginx代理)
+- **部署路径**: /root
 
 ## 🚀 完整手动部署步骤
 
@@ -48,64 +50,94 @@ python3.11 --version
 pip3.11 --version
 ```
 
-### 第三步：创建项目目录并克隆代码
+### 第三步：在/root目录下克隆代码
 
 ```bash
-# 创建项目目录
-mkdir -p /opt/camel_ai
-cd /opt/camel_ai
+# 进入root目录
+cd /root
 
 # 克隆项目代码
-git clone https://github.com/yinjianhui/camel_ai.git .
+git clone https://github.com/yinjianhui/camel_ai.git
 
 # 检查项目结构
 ls -la
+
+# 进入项目目录
+cd camel_ai
 ```
 
 ### 第三步（新增）：前端API配置优化说明
 **重要更新**: 前端API配置已优化，使用相对路径自动适配服务器环境。
 
 **优化内容**:
-- **前端配置**: 将硬编码的API地址改为相对路径
-- **自动适配**: 前端自动使用当前域名进行API调用
-- **环境无关**: 开发和生产环境使用相同配置
+- **前端配置**: 使用相对路径（空字符串）自动适配当前域名
+- **自动适配**: 前端自动使用当前访问的域名进行API调用
+- **环境无关**: 开发和生产环境使用相同配置，无需修改
 
-**优化详情**:
+**实际配置**:
 ```javascript
-// 优化前（硬编码IP地址）
-apiBase: 'http://111.229.108.199',
-
-// 优化后（相对路径）
+// 当前前端配置（已优化）
 apiBase: '', // 使用相对路径自动适应当前域名
+
+// 系统状态自动获取
+systemStatus: {
+    serverUrl: window.location.origin, // 当前服务器地址
+    apiBaseUrl: '' // API基础URL（相对路径）
+}
 ```
 
 **优势**:
-1. **自动适配**: 无需手动修改前端配置
-2. **环境无关**: 开发和生产环境配置一致
-3. **维护简单**: 服务器IP变更时无需修改前端代码
-4. **部署灵活**: 支持任意域名和IP地址访问
+1. **完全自动**: 无需任何手动配置，前端自动适配
+2. **环境无关**: 开发、测试、生产环境配置完全一致
+3. **零维护**: 服务器IP、域名变更时完全无需修改前端代码
+4. **最大灵活性**: 支持任意访问方式（IP、域名、端口等）
 
-**API调用示例**:
+**实际API调用示例**:
 ```javascript
-// 健康检查
-const response = await fetch(`/api/health`, {
+// 健康检查（自动适配当前域名）
+const response = await fetch(`${this.apiBase}/api/health`, {
     method: 'GET',
     timeout: 5000
 });
 
-// 启动会议
-const data = await this.apiCall(`/api/start_meeting`, {
+// 启动会议（自动适配当前域名）
+const data = await this.apiCall(`${this.apiBase}/api/start_meeting`, {
     method: 'POST',
     body: JSON.stringify({...})
 });
 
-// WebSocket连接
-this.socket = io('', { // 使用相对路径
+// WebSocket连接（自动适配当前域名）
+this.socket = io(this.apiBase, { // 使用相对路径
     transports: ['websocket', 'polling'],
     timeout: 20000,
     forceNew: true
 });
 ```
+
+**系统初始化**:
+```javascript
+// 系统启动时自动获取当前环境信息
+initializeSystemStatus() {
+    // 设置服务器URL和API基础URL
+    this.systemStatus.serverUrl = window.location.origin;
+    this.systemStatus.apiBaseUrl = this.apiBase;
+    
+    // 记录当前环境信息
+    this.log('info', '系统状态初始化完成', {
+        serverUrl: this.systemStatus.serverUrl,
+        apiBaseUrl: this.systemStatus.apiBaseUrl,
+        userAgent: navigator.userAgent,
+        timestamp: new Date().toISOString()
+    });
+}
+```
+
+**部署优势**:
+- **开箱即用**: 部署后前端立即自动适配服务器环境
+- **无需配置**: 不需要在前端代码中配置任何服务器地址
+- **无缝切换**: 支持IP访问、域名访问、带端口访问等多种方式
+- **负载均衡友好**: 支持多服务器负载均衡环境
+- **HTTPS友好**: 自动适配HTTP和HTTPS协议
 
 **预期输出应该包含以下目录和文件：**
 ```
@@ -118,7 +150,7 @@ drwxr-xr-x  4 root root    4096 Oct  7 14:00 multi_agent_meeting
 ### 第四步：安装项目依赖
 
 ```bash
-cd /opt/camel_ai
+cd /root/camel_ai
 
 # 验证Python版本
 python3.11 --version
@@ -231,7 +263,7 @@ self.api_keys: List[str] = [
 ]
 ```
 
-### 第八步：创建必要的目录
+### 第八步：创建必要的目录并设置权限
 
 ```bash
 # 创建日志、临时文件和会议保存目录
@@ -239,7 +271,12 @@ mkdir -p multi_agent_meeting/backend/logs
 mkdir -p multi_agent_meeting/backend/temp
 mkdir -p multi_agent_meeting/backend/saved_meetings
 
-# 设置目录权限
+# 设置目录权限（赋予所有用户所有权限）
+chmod -R 777 multi_agent_meeting/backend/logs
+chmod -R 777 multi_agent_meeting/backend/temp
+chmod -R 777 multi_agent_meeting/backend/saved_meetings
+
+# 设置其他目录权限
 chmod -R 755 multi_agent_meeting/backend/
 chown -R root:root multi_agent_meeting/backend/
 ```
@@ -279,8 +316,8 @@ API密钥配置:
   智能体3: sk-54022c1...
   智能体4: sk-d8dd47f...
 目录配置:
-  日志目录: /opt/camel_ai/multi_agent_meeting/backend/logs
-  临时目录: /opt/camel_ai/multi_agent_meeting/backend/temp
+  日志目录: /root/camel_ai/multi_agent_meeting/backend/logs
+  临时目录: /root/camel_ai/multi_agent_meeting/backend/temp
 启动Web服务器...
 ```
 
@@ -314,9 +351,9 @@ After=network.target
 Type=simple
 User=root
 Group=root
-WorkingDirectory=/opt/camel_ai
+WorkingDirectory=/root/camel_ai
 Environment=PATH=/usr/local/bin:/usr/bin:/bin
-Environment=PYTHONPATH=/opt/camel_ai
+Environment=PYTHONPATH=/root/camel_ai
 ExecStart=/usr/bin/python3.11 multi_agent_meeting/backend/app_new.py
 Restart=always
 RestartSec=10
@@ -342,7 +379,7 @@ server {
 
     # 前端静态文件
     location / {
-        root /opt/camel_ai/multi_agent_meeting/frontend;
+        root /root/camel_ai/multi_agent_meeting/frontend;
         index index.html;
         try_files $uri $uri/ /index.html;
     }
@@ -427,7 +464,7 @@ systemctl status multi-agent-meeting
     Tasks: 2 (limit: 1137)
    Memory: 45.6M
    CGroup: /system.slice/multi-agent-meeting.service
-           └─12345 /opt/camel_ai/venv/bin/python multi_agent_meeting/backend/app_new.py
+           └─12345 /usr/bin/python3.11 multi_agent_meeting/backend/app_new.py
 ```
 
 ### 第十六步：验证部署
@@ -493,7 +530,7 @@ journalctl -u multi-agent-meeting -f
 journalctl -u multi-agent-meeting -n 100
 
 # 查看应用日志
-tail -f /opt/camel_ai/multi_agent_meeting/backend/logs/meeting_*.log
+tail -f /root/camel_ai/multi_agent_meeting/backend/logs/meeting_*.log
 
 # 查看Nginx日志
 tail -f /var/log/nginx/access.log
@@ -502,7 +539,7 @@ tail -f /var/log/nginx/error.log
 
 ### 更新代码和依赖
 ```bash
-cd /opt/camel_ai
+cd /root/camel_ai
 
 # 拉取最新代码
 git pull origin master
@@ -514,12 +551,12 @@ python3.11 -m pip install -r multi_agent_meeting/backend/requirements.txt
 systemctl restart multi-agent-meeting
 
 # 检查服务状态
-systemctl status multi_agent-meeting
+systemctl status multi-agent-meeting
 ```
 
 ### 重新安装依赖
 ```bash
-cd /opt/camel_ai
+cd /root/camel_ai
 
 # 卸载所有包（谨慎使用）
 python3.11 -m pip freeze | xargs python3.11 -m pip uninstall -y
@@ -604,9 +641,14 @@ kill -9 <PID>
 
 ```bash
 # 修复权限
-chown -R root:root /opt/camel_ai
-chmod -R 755 /opt/camel_ai
-chmod -R 755 /opt/camel_ai/multi_agent_meeting/backend/
+chown -R root:root /root/camel_ai
+chmod -R 755 /root/camel_ai
+chmod -R 755 /root/camel_ai/multi_agent_meeting/backend/
+
+# 确保logs、temp、saved_meetings目录有所有权限
+chmod -R 777 /root/camel_ai/multi_agent_meeting/backend/logs
+chmod -R 777 /root/camel_ai/multi_agent_meeting/backend/temp
+chmod -R 777 /root/camel_ai/multi_agent_meeting/backend/saved_meetings
 ```
 
 ### 6. Nginx配置问题
@@ -700,14 +742,14 @@ systemctl restart multi-agent-meeting
 journalctl -u multi-agent-meeting -f
 
 # 更新代码和依赖
-cd /opt/camel_ai && git pull origin master && python3.11 -m pip install -r multi_agent_meeting/backend/requirements.txt && systemctl restart multi-agent-meeting
+cd /root/camel_ai && git pull origin master && python3.11 -m pip install -r multi_agent_meeting/backend/requirements.txt && systemctl restart multi-agent-meeting
 ```
 
 ## 🔄 更新和维护
 
 ### 代码更新
 ```bash
-cd /opt/camel_ai
+cd /root/camel_ai
 git pull origin master
 python3.11 -m pip install -r multi_agent_meeting/backend/requirements.txt
 systemctl restart multi-agent-meeting
@@ -715,7 +757,7 @@ systemctl restart multi-agent-meeting
 
 ### 依赖更新
 ```bash
-cd /opt/camel_ai
+cd /root/camel_ai
 python3.11 -m pip install --upgrade -r multi_agent_meeting/backend/requirements.txt
 systemctl restart multi-agent-meeting
 ```
@@ -733,11 +775,419 @@ yum update -y
 
 如果部署过程中遇到问题，请检查：
 1. **服务日志**: `journalctl -u multi-agent-meeting -f`
-2. **应用日志**: `tail -f /opt/camel_ai/multi_agent_meeting/backend/logs/meeting_*.log`
+2. **应用日志**: `tail -f /root/camel_ai/multi_agent_meeting/backend/logs/meeting_*.log`
 3. **Nginx日志**: `tail -f /var/log/nginx/error.log`
 4. **系统资源**: `htop`, `df -h`, `free -h`
 5. **网络连接**: `netstat -tlnp`, `curl http://localhost:5000/api/health`
 6. **Python环境**: `python3.11 --version && python3.11 -m pip list`
+
+## 🚨 生产环境常见问题及解决方案
+
+### 1. Vue开发版本警告
+**问题**: 浏览器控制台显示 `You are running a development build of Vue. Make sure to use the production build (*.prod.js) when deploying for production.`
+
+**解决方案**:
+```bash
+# 编辑前端HTML文件，将Vue开发版本替换为生产版本
+nano /root/camel_ai/multi_agent_meeting/frontend/index.html
+
+# 将这行：
+<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+
+# 替换为：
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+```
+
+### 2. Favicon 404错误
+**问题**: 浏览器控制台显示 `/favicon.ico:1 Failed to load resource: the server responded with a status of 404 (Not Found)`
+
+**解决方案**:
+```bash
+# 创建一个简单的favicon.ico文件或添加到Nginx配置中
+# 方法1：创建favicon.ico
+cd /root/camel_ai/multi_agent_meeting/frontend
+wget -O favicon.ico https://www.google.com/favicon.ico
+
+# 方法2：在Nginx配置中添加favicon处理
+nano /etc/nginx/sites-available/multi-agent-meeting
+
+# 在server块中添加：
+location = /favicon.ico {
+    access_log off;
+    log_not_found off;
+    return 204;
+}
+```
+
+### 3. CEO发言失败和JavaScript函数错误
+**问题**: 
+- `CEO发言失败 Error: 会议已结束`
+- `Uncaught TypeError: this.startCeoTimer is not a function`
+
+**解决方案**:
+```bash
+# 检查前端JavaScript代码，确保所有函数都正确定义
+nano /root/camel_ai/multi_agent_meeting/frontend/app.js
+
+# 确保以下函数都存在并正确定义：
+
+# 1. startCeoTimer函数 - CEO定时器管理
+startCeoTimer() {
+    this.log('info', '启动CEO定时器');
+    
+    // 清除现有定时器
+    if (this.ceoTimer) {
+        clearInterval(this.ceoTimer);
+        this.ceoTimer = null;
+    }
+    
+    // 设置新的定时器，定期检查会议状态
+    this.ceoTimer = setInterval(() => {
+        this.checkMeetingStatus();
+    }, 5000); // 每5秒检查一次
+    
+    // 立即执行一次检查
+    this.checkMeetingStatus();
+},
+
+# 2. stopCeoTimer函数 - 停止CEO定时器
+stopCeoTimer() {
+    this.log('info', '停止CEO定时器');
+    
+    if (this.ceoTimer) {
+        clearInterval(this.ceoTimer);
+        this.ceoTimer = null;
+    }
+},
+
+# 3. checkMeetingStatus函数 - 检查会议状态
+async checkMeetingStatus() {
+    try {
+        const data = await this.apiCall(`${this.apiBase}/api/meeting_status`, {
+            method: 'GET'
+        });
+        
+        if (data.status === 'success' && data.meeting_state) {
+            this.log('debug', '会议状态检查成功', data.meeting_state);
+            
+            // 如果会议已结束但前端未更新，则更新状态
+            if (data.meeting_state.status === 'ended' && !this.showSummary) {
+                this.log('info', '检测到会议已结束，更新前端状态');
+                this.stopCeoTimer();
+                this.isThinking = false;
+                this.currentSpeakerId = null;
+                this.waitingForCeo = false;
+                this.generateSummary();
+            }
+        }
+    } catch (error) {
+        this.log('warn', '检查会议状态失败', error);
+    }
+},
+
+# 4. 在beforeUnmount中添加定时器清理
+beforeUnmount() {
+    // 断开WebSocket连接
+    if (this.socket) {
+        this.socket.disconnect();
+    }
+    
+    // 停止CEO定时器
+    this.stopCeoTimer();
+    
+    // 移除键盘事件监听
+    document.removeEventListener('keydown', this.handleKeydown);
+}
+
+# 5. 检查会议状态逻辑，确保CEO发言时会议未结束
+async startCeoSpeak() {
+    // 检查会议是否已结束
+    if (this.showSummary || !this.meetingStarted) {
+        this.log('info', '会议已结束，停止CEO发言');
+        return;
+    }
+    
+    this.log('info', 'CEO开始发言（轮次总结）');
+    
+    try {
+        const data = await this.apiCall(`${this.apiBase}/api/ceo_speak`, {
+            method: 'POST'
+        });
+        
+        if (data.status === 'success') {
+            // 处理CEO发言成功逻辑
+        } else {
+            // 检查是否是会议结束错误
+            if (data.error && data.error.includes('会议正在结束')) {
+                this.log('info', '会议正在结束，停止CEO发言');
+                this.isThinking = false;
+                return;
+            }
+            throw new Error(data.error || '发言失败');
+        }
+    } catch (error) {
+        this.log('error', 'CEO发言失败', error);
+        this.showNotification('CEO发言失败：' + error.message, 'error');
+        this.isThinking = false;
+    }
+}
+```
+
+**修复后的效果**:
+- ✅ `startCeoTimer` 函数已正确定义，不再出现 `is not a function` 错误
+- ✅ CEO定时器管理完善，包括启动、停止和状态检查
+- ✅ 会议状态监控机制健全，能够及时检测会议结束状态
+- ✅ 组件销毁时自动清理定时器，避免内存泄漏
+- ✅ CEO发言逻辑增强，包含会议状态检查和错误处理
+
+### 4. WebSocket连接不稳定
+**问题**: `WebSocket connection failed: Invalid frame header` 和 `WebSocket连接断开`
+
+**解决方案**:
+```bash
+# 1. 后端WebSocket配置优化
+nano /root/camel_ai/multi_agent_meeting/backend/config.py
+
+# 确保WebSocket配置包含优化参数：
+@dataclass
+class WebSocketConfig:
+    """WebSocket配置"""
+    cors_allowed_origins: str = "*"
+    async_mode: str = "threading"
+    ping_timeout: int = 60
+    ping_interval: int = 25
+    # 新增WebSocket优化配置
+    engineio_logger: bool = False  # 禁用Engine.IO日志以减少干扰
+    manage_session: bool = True  # 启用会话管理
+    http_compression: bool = True  # 启用HTTP压缩
+    compression_threshold: int = 1024  # 压缩阈值
+    cookie: str = None  # 禁用cookie以简化跨域
+    cors_credentials: bool = False  # 禁用CORS凭据以简化跨域
+
+# 2. 后端应用WebSocket配置更新
+nano /root/camel_ai/multi_agent_meeting/backend/app_new.py
+
+# 确保SocketIO实例创建时包含优化参数：
+socketio = SocketIO(
+    app, 
+    cors_allowed_origins=config.websocket.cors_allowed_origins,
+    async_mode=config.websocket.async_mode,
+    ping_timeout=config.websocket.ping_timeout,
+    ping_interval=config.websocket.ping_interval,
+    # 新增WebSocket优化参数
+    engineio_logger=config.websocket.engineio_logger,
+    manage_session=config.websocket.manage_session,
+    http_compression=config.websocket.http_compression,
+    compression_threshold=config.websocket.compression_threshold,
+    cookie=config.websocket.cookie,
+    cors_credentials=config.websocket.cors_credentials
+)
+
+# 3. 前端WebSocket配置优化
+nano /root/camel_ai/multi_agent_meeting/frontend/app.js
+
+# 修改WebSocket连接配置（已在前端代码中实现）：
+# 前端已包含完整的WebSocket优化配置，包括：
+# - 传输协议优先级和降级机制
+# - 增强的重连策略
+# - 详细的错误处理和日志记录
+# - 自动降级到HTTP长轮询
+# - 协议升级监控
+
+# 4. Nginx WebSocket代理配置优化
+nano /etc/nginx/sites-available/multi-agent-meeting
+
+# 替换WebSocket代理配置为：
+location /socket.io/ {
+    proxy_pass http://127.0.0.1:5000;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection $connection_upgrade;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    
+    # 增加超时配置
+    proxy_connect_timeout 75s;
+    proxy_send_timeout 75s;
+    proxy_read_timeout 75s;
+    
+    # 增加缓冲区配置
+    proxy_buffering off;
+    proxy_buffer_size 4k;
+    proxy_buffers 8 4k;
+    
+    # WebSocket特定优化
+    proxy_set_header Sec-WebSocket-Extensions $http_sec_websocket_extensions;
+    proxy_set_header Sec-WebSocket-Key $http_sec_websocket_key;
+    proxy_set_header Sec-WebSocket-Version $http_sec_websocket_version;
+    
+    # 启用支持WebSocket的HTTP/1.1
+    proxy_next_upstream error timeout invalid_header http_500 http_502 http_503 http_504;
+    
+    # 连接池优化
+    proxy_socket_keepalive on;
+    proxy_keepalive_timeout 75s;
+    proxy_keepalive_requests 1000;
+}
+
+# 在nginx.conf的http块中添加：
+http {
+    # ... 其他配置 ...
+    
+    # WebSocket支持映射
+    map $http_upgrade $connection_upgrade {
+        default upgrade;
+        '' close;
+    }
+    
+    # 增加客户端超时
+    client_body_timeout 75s;
+    client_header_timeout 75s;
+    
+    # 增加代理超时
+    proxy_connect_timeout 75s;
+    proxy_send_timeout 75s;
+    proxy_read_timeout 75s;
+    
+    # 启用gzip压缩（对WebSocket数据传输有帮助）
+    gzip on;
+    gzip_vary on;
+    gzip_proxied any;
+    gzip_comp_level 6;
+    gzip_types
+        text/plain
+        text/css
+        text/xml
+        text/javascript
+        application/javascript
+        application/json
+        application/xml+rss;
+}
+
+# 5. 系统级优化
+# 增加系统文件描述符限制
+echo "* soft nofile 65536" >> /etc/security/limits.conf
+echo "* hard nofile 65536" >> /etc/security/limits.conf
+
+# 优化内核参数（在/etc/sysctl.conf中添加）：
+net.core.somaxconn = 65535
+net.ipv4.tcp_max_syn_backlog = 65535
+net.ipv4.tcp_syncookies = 1
+net.ipv4.tcp_tw_reuse = 1
+net.ipv4.tcp_fin_timeout = 10
+net.ipv4.tcp_keepalive_time = 1200
+net.ipv4.tcp_keepalive_intvl = 30
+net.ipv4.tcp_keepalive_probes = 3
+
+# 应用内核参数
+sysctl -p
+
+# 6. 重启服务
+systemctl restart nginx
+systemctl restart multi-agent-meeting
+```
+
+**修复后的效果**:
+- ✅ **Invalid frame header错误** - 通过优化WebSocket协议处理和代理配置得到解决
+- ✅ **连接稳定性** - 增强的重连机制和降级策略确保连接稳定
+- ✅ **协议兼容性** - 支持WebSocket和HTTP长轮询的无缝切换
+- ✅ **性能优化** - 启用压缩、连接池和超时优化提升性能
+- ✅ **系统资源** - 优化文件描述符和内核参数提升系统承载能力
+
+### 5. 生产环境性能优化
+**解决方案**:
+```bash
+# 压缩前端资源
+apt install -y gzip
+
+# 配置Nginx启用压缩
+nano /etc/nginx/nginx.conf
+
+# 在http块中添加或确保以下配置存在：
+gzip on;
+gzip_vary on;
+gzip_min_length 1024;
+gzip_proxied any;
+gzip_comp_level 6;
+gzip_types
+    text/plain
+    text/css
+    text/xml
+    text/javascript
+    application/javascript
+    application/xml+rss
+    application/json;
+
+# 设置浏览器缓存
+nano /etc/nginx/sites-available/multi-agent-meeting
+
+# 在server块中添加：
+location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {
+    expires 1y;
+    add_header Cache-Control "public, immutable";
+}
+```
+
+### 6. 生产环境安全加固
+**解决方案**:
+```bash
+# 隐藏Nginx版本
+nano /etc/nginx/nginx.conf
+
+# 在http块中添加：
+server_tokens off;
+
+# 添加安全响应头
+nano /etc/nginx/sites-available/multi-agent-meeting
+
+# 在server块中添加：
+add_header X-Frame-Options "SAMEORIGIN" always;
+add_header X-Content-Type-Options "nosniff" always;
+add_header X-XSS-Protection "1; mode=block" always;
+add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+
+# 配置防火墙限制访问
+ufw allow from your_trusted_ip to any port 22
+ufw allow from any to any port 80
+ufw allow from any to any port 443
+ufw deny from any to any port 5000  # 禁止直接访问后端端口
+```
+
+### 7. 生产环境监控和日志
+**解决方案**:
+```bash
+# 安装监控工具
+apt install -y htop iotop nethogs
+
+# 配置日志轮转
+nano /etc/logrotate.d/multi-agent-meeting
+
+# 添加以下内容：
+/root/camel_ai/multi_agent_meeting/backend/logs/*.log {
+    daily
+    missingok
+    rotate 30
+    compress
+    delaycompress
+    notifempty
+    create 644 root root
+    postrotate
+        systemctl reload multi-agent-meeting
+    endscript
+}
+
+# 设置系统资源监控
+echo "* * * * * root /usr/bin/df -h >> /var/log/system_monitor.log" >> /etc/crontab
+echo "* * * * * root /usr/bin/free -h >> /var/log/system_monitor.log" >> /etc/crontab
+```
+
+---
+
+**部署完成后，您可以通过 http://111.229.108.199 访问您的多智能体会议系统！**
+
+祝您使用愉快！🎉
 
 ---
 

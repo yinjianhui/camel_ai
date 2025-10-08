@@ -96,9 +96,19 @@ htmlcov/
 dmypy.json
 
 # Project specific
-multi_agent_meeting/backend/logs/
-multi_agent_meeting/backend/temp/
-multi_agent_meeting/backend/saved_meetings/
+# 忽略logs文件夹下的所有文件和子文件夹，但保留文件夹本身
+multi_agent_meeting/backend/logs/*
+multi_agent_meeting/backend/logs/*/
+
+# 忽略temp文件夹下的所有文件和子文件夹，但保留文件夹本身
+multi_agent_meeting/backend/temp/*
+multi_agent_meeting/backend/temp/*/
+
+# 忽略saved_meetings文件夹下的所有文件和子文件夹，但保留文件夹本身
+multi_agent_meeting/backend/saved_meetings/*
+multi_agent_meeting/backend/saved_meetings/*/
+
+# 忽略其他编译缓存
 multi_agent_meeting/backend/__pycache__/
 multi_agent_meeting/backend/routes/__pycache__/
 multi_agent_meeting/backend/services/__pycache__/

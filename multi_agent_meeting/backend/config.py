@@ -63,6 +63,13 @@ class WebSocketConfig:
     async_mode: str = "threading"
     ping_timeout: int = 60
     ping_interval: int = 25
+    # 新增WebSocket优化配置
+    engineio_logger: bool = False  # 禁用Engine.IO日志以减少干扰
+    manage_session: bool = True  # 启用会话管理
+    http_compression: bool = True  # 启用HTTP压缩
+    compression_threshold: int = 1024  # 压缩阈值
+    cookie: str = None  # 禁用cookie以简化跨域
+    cors_credentials: bool = False  # 禁用CORS凭据以简化跨域
 
 
 class Config:

@@ -59,9 +59,17 @@ def create_app():
         cors_allowed_origins=config.websocket.cors_allowed_origins,
         async_mode=config.websocket.async_mode,
         ping_timeout=config.websocket.ping_timeout,
-        ping_interval=config.websocket.ping_interval
+        ping_interval=config.websocket.ping_interval,
+        # 新增WebSocket优化参数
+        engineio_logger=config.websocket.engineio_logger,
+        manage_session=config.websocket.manage_session,
+        http_compression=config.websocket.http_compression,
+        compression_threshold=config.websocket.compression_threshold,
+        cookie=config.websocket.cookie,
+        cors_credentials=config.websocket.cors_credentials
     )
     logger.info(f"SocketIO配置: async_mode={config.websocket.async_mode}")
+    logger.info(f"WebSocket优化: compression={config.websocket.http_compression}, manage_session={config.websocket.manage_session}")
     
     # 注册WebSocket事件
     register_websocket_events(socketio)
